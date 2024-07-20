@@ -8,8 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
-
-const API_KEY = 'beafb1acf6714ac8a9a94612241807';
+import {getCitySuggestions} from '../Services/WeatherApi';
 
 const CityList = ({cities, onSelectCity}) => {
   return (
@@ -33,35 +32,26 @@ const SearchBar = ({searchCity, setSearchCity, handleAddCity}) => {
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const getCitySuggestions = async input => {
-    if (input.length < 3) return; // Don't search for very short inputs
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `http://api.weatherapi.com/v1/search.json?key=${API_KEY}&q=${input}`,
-      );
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      setSuggestions(data);
-    } catch (error) {
-      console.error('Error fetching city suggestions:', error);
-      setSuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (searchCity) {
-        getCitySuggestions(searchCity);
-      } else {
+    const fetchSuggestions = async () => {
+      if (searchCity.length < 3) {
         setSuggestions([]);
+        return;
       }
-    }, 300); // Debounce by 300ms
+
+      setIsLoading(true);
+      try {
+        const data = await getCitySuggestions(searchCity);
+        setSuggestions(data);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(fetchSuggestions, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchCity]);
